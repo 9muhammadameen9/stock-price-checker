@@ -10,15 +10,15 @@ const runner            = require('./test-runner');
 
 const app = express();
 
-// --- THE ULTIMATE FIX ---
-app.disable('x-powered-by');
-
+// --- THE FIX: Set CSP before ANY other middleware ---
 app.use((req, res, next) => {
-  // This exact string is what FCC's regex is looking for
-  res.setHeader("Content-Security-Policy", "default-src 'self';script-src 'self' trusted-cdn.com;style-src 'self'");
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self';script-src 'self';style-src 'self'"
+  );
+  res.removeHeader("X-Powered-By");
   next();
 });
-// ------------------------
 
 app.use('/public', express.static(process.cwd() + '/public'));
 app.use(cors({origin: '*'})); //For FCC testing purposes only
@@ -32,7 +32,7 @@ app.route('/')
     res.sendFile(process.cwd() + '/views/index.html');
   });
 
-//For FCC testing purposes
+//For FCC testing purposes - THIS is where the test reads headers from
 fccTestingRoutes(app);
 
 //Routing for API 
