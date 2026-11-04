@@ -3,6 +3,7 @@ require('dotenv').config();
 const express     = require('express');
 const bodyParser  = require('body-parser');
 const cors        = require('cors');
+const helmet      = require('helmet');
 
 const apiRoutes         = require('./routes/api.js');
 const fccTestingRoutes  = require('./routes/fcctesting.js');
@@ -10,15 +11,20 @@ const runner            = require('./test-runner');
 
 const app = express();
 
-// 1. Manually set the exact headers FCC expects (bypassing Helmet)
-app.use((req, res, next) => {
-  res.setHeader(
-    "Content-Security-Policy",
-    "default-src 'self';script-src 'self' trusted-cdn.com;style-src 'self'"
-  );
-  res.removeHeader("X-Powered-By");
-  next();
-});
+// Use Helmet to set the headers
+app.use(helmet.hidePoweredBy());
+
+// Set the EXACT CSP header FCC expects. 
+// It needs to allow 'self' for default and script, and NOT block the test runner.
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"], // Allows FCC test runner
+      styleSrc: ["'self'", "'unsafe-inline'"]   // Allows FCC test runner
+    },
+  })
+);
 
 app.use('/public', express.static(process.cwd() + '/public'));
 app.use(cors({origin: '*'})); //For FCC testing purposes only
