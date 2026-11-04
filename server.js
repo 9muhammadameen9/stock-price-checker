@@ -3,6 +3,7 @@ require('dotenv').config();
 const express     = require('express');
 const bodyParser  = require('body-parser');
 const cors        = require('cors');
+const helmet      = require('helmet');
 
 const apiRoutes         = require('./routes/api.js');
 const fccTestingRoutes  = require('./routes/fcctesting.js');
@@ -10,12 +11,18 @@ const runner            = require('./test-runner');
 
 const app = express();
 
-// 1. THIS MUST BE FIRST
-app.use((req, res, next) => {
-  // The exact string FCC expects. No spaces after semicolons.
-  res.setHeader("Content-Security-Policy", "default-src 'self';script-src 'self';style-src 'self'");
-  next();
-});
+// 1. THIS MUST BE THE FIRST MIDDLEWARE
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'"],
+      },
+    },
+  })
+);
 
 app.use('/public', express.static(process.cwd() + '/public'));
 app.use(cors({origin: '*'})); //For FCC testing purposes only
