@@ -3,6 +3,7 @@ require('dotenv').config();
 const express     = require('express');
 const bodyParser  = require('body-parser');
 const cors        = require('cors');
+const helmet      = require('helmet');
 
 const apiRoutes         = require('./routes/api.js');
 const fccTestingRoutes  = require('./routes/fcctesting.js');
@@ -10,21 +11,23 @@ const runner            = require('./test-runner');
 
 const app = express();
 
-app.use('/public', express.static(process.cwd() + '/public'));
+// 1. Hide X-Powered-By
+app.use(helmet.hidePoweredBy());
 
+// 2. Set the EXACT CSP header freeCodeCamp expects
+app.use(helmet.contentSecurityPolicy({
+  directives: {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'", "trusted-cdn.com"],
+    styleSrc: ["'self'"]
+  }
+}));
+
+app.use('/public', express.static(process.cwd() + '/public'));
 app.use(cors({origin: '*'})); //For FCC testing purposes only
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-
-// 1. Disable X-Powered-By header
-app.disable('x-powered-by');
-
-// 2. Set the Content Security Policy manually so it matches the test exactly
-app.use((req, res, next) => {
-  res.setHeader("Content-Security-Policy", "default-src 'self';script-src 'self';style-src 'self'");
-  next();
-});
 
 //Index page (static HTML)
 app.route('/')
@@ -61,4 +64,4 @@ const listener = app.listen(process.env.PORT || 3000, function () {
   }
 });
 
-module.exports = app; //for testing
+module.exports = app; //for testings
